@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MyLang Compiler</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a6c1ee);
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            margin-top: 20px;
+            color: #222;
+        }
+
+        textarea {
+            width: 80%;
+            height: 200px;
+            border-radius: 10px;
+            padding: 10px;
+            border: 2px solid #ff69b4;
+            font-size: 14px;
+        }
+
+        button {
+            background: linear-gradient(to right, #ff69b4, #ffd700, #1e90ff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .box {
+            background: white;
+            padding: 15px;
+            width: 80%;
+            margin: 15px auto;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        #outputBox {
+            border: 2px solid #1e90ff;
+        }
+
+        #suggestionBox {
+            border: 2px solid #ffd700;
+        }
+
+        #chatbox {
+            height: 200px;
+            overflow-y: auto;
+            border: 2px solid #ff69b4;
+        }
+
+        input {
+            padding: 10px;
+            width: 60%;
+            border-radius: 10px;
+            border: 2px solid #1e90ff;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>MyLang Compiler + Assistant</h1>
+
+<textarea id="code">
+start
+let a = 5
+let b = 10
+let c = a + b
+print c
+stop
+</textarea>
+
+<br>
+
+<button onclick="runCode()">Run Code</button>
+
+<div id="outputBox" class="box">
+    <h3>Output</h3>
+    <pre id="output">Waiting...</pre>
+</div>
+
+
+<div id="suggestionBox" class="box">
+    <h3>AI Suggestions</h3>
+    <pre id="suggestions">No suggestions yet</pre>
+</div>
+
+<hr>
+
+<h2>Assistant</h2>
+
+<div id="chatbox" class="box"></div>
+
+<input type="text" id="msg" placeholder="Ask something...">
+<button onclick="sendMsg()">Send</button>
+
+<script>
+async function runCode() {
+    let code = document.getElementById("code").value;
+
+    try {
+        let res = await fetch("http://127.0.0.1:5000/run", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({code: code})
+        });
+
+        let data = await res.json();
+
+        
+        document.getElementById("output").innerText = data.output || "No output";
+
+       
+        if (data.suggestions) {
+            document.getElementById("suggestions").innerText =
+                data.suggestions.join("\n");
+        } else {
+            document.getElementById("suggestions").innerText = "No suggestions";
+        }
+
+    } catch (error) {
+        document.getElementById("output").innerText = "Server error!";
+    }
+}
+
+async function sendMsg() {
+    let msgInput = document.getElementById("msg");
+    let msg = msgInput.value;
+
+    if (!msg) return;
+
+    let chat = document.getElementById("chatbox");
+
+    
+    chat.innerHTML += "<p><b>You:</b> " + msg + "</p>";
+
+    try {
+        let res = await fetch("http://127.0.0.1:5000/chat", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({message: msg})
+        });
+
+        let data = await res.json();
+
+       
+        chat.innerHTML += "<p><b>Bot:</b> " + data.reply + "</p>";
+
+    } catch (error) {
+        chat.innerHTML += "<p><b>Bot:</b> Error connecting to server</p>";
+    }
+
+  
+    chat.scrollTop = chat.scrollHeight;
+
+    msgInput.value = "";
+}
+</script>
+
+</body>
+</html>
